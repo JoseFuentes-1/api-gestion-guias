@@ -21,12 +21,31 @@ public class GuiaController {
         this.s3Service = s3Service;
     }
 
+    private boolean esParametroSeguro(String valor) {
+        if (valor == null) {
+            return false;
+        }
+        if (valor.contains("..") || valor.contains("/") || valor.contains("\\")) {
+            return false;
+        }
+        return valor.matches("[a-zA-Z0-9._\\- ]+");
+    }
+
+    private ResponseEntity<String> respuestaParametroInvalido() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Parámetros inválidos");
+    }
+
 // Endpoint: Crear o Subir Guía
     @PostMapping("/subir")
     public ResponseEntity<String> subirGuia(
             @RequestParam("archivo") MultipartFile archivo,
             @RequestParam("fecha") String fecha,
             @RequestParam("transportista") String transportista) {
+        String nombreArchivoOriginal = archivo == null ? null : archivo.getOriginalFilename();
+        if (!esParametroSeguro(fecha) || !esParametroSeguro(transportista) || !esParametroSeguro(nombreArchivoOriginal)) {
+            return respuestaParametroInvalido();
+        }
+
         try {
             String resultado = s3Service.procesarYSubirGuia(archivo, fecha, transportista);
             return ResponseEntity.ok(resultado);

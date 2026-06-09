@@ -33,3 +33,22 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/gestion-guias:latest
+
+    - name: Desplegar en EC2 via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          sudo yum update -y
+          sudo yum install docker -y
+          sudo service docker start
+          sudo docker pull ${{ secrets.DOCKER_USERNAME }}/gestion-guias:latest
+          sudo docker stop api-guias || true
+          sudo docker rm api-guias || true
+          sudo docker run -d -p 80:8080 --name api-guias \
+            -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" \
+            ${{ secrets.DOCKER_USERNAME }}/gestion-guias:latest

@@ -30,14 +30,18 @@ public class S3Service {
         this.s3Client = s3Client;
     }
 
-    // 1. CREAR / SUBIR / ACTUALIZAR (En S3, actualizar es sobreescribir con la misma llave)
+    
     public String procesarYSubirGuia(MultipartFile archivo, String fecha, String transportista) throws IOException {
         Path directorioEfs = Paths.get(efsTempFolder);
         if (!Files.exists(directorioEfs)) {
             Files.createDirectories(directorioEfs);
         }
         
-        String nombreArchivo = archivo.getOriginalFilename();
+        String nombreOriginal = archivo.getOriginalFilename();
+        String nombreArchivo = org.springframework.util.StringUtils.cleanPath(nombreOriginal);
+        if (nombreArchivo.contains("..")) {
+            throw new SecurityException("¡Alerta de seguridad! El archivo contiene una ruta inválida.");
+        }
         Path rutaLocal = directorioEfs.resolve(nombreArchivo);
         archivo.transferTo(rutaLocal.toFile());
 
